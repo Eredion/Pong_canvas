@@ -67,6 +67,10 @@ const Ball = {
 		this.dx = Math.cos(this.angle) * this.speed;
 		this.dy = Math.sin(this.angle) * this.speed;
 	},
+	resetPos() {
+		this.x = canvas.width / 2;
+		this.y = canvas.height / 2;
+	}
 }
 
 drawBall = () => {
@@ -76,30 +80,40 @@ drawBall = () => {
 	ctx.fill();
 }
 
+checkCollistion = (player, ball) => {	
+	if (ball.y + ball.size >= player.y && ball.y - ball.size <= player.y + player.h) {
+		if ((player.x < canvas.width /2 && ball.x - ball.size <= player.x) ||
+			(player.x > canvas.width /2 && ball.x + ball.size >= player.x))
+			calculateBounceAngle(player, ball);
+	}
+}
 
 calculateBounceAngle = (player, ball) => {
 	const playerMiddle = player.y + (player.h / 2);
-	const offset = (playerMiddle - ball.y) / (player.h / 2);
-	ball.angle = offset * (Math.PI * 0.833);
+	const offset = (playerMiddle - ball.y) / (player.h);
+	ball.angle = -offset * (Math.PI * 0.42);
+	if (player.x > canvas.width / 2)
+		ball.angle = Math.PI - ball.angle
 }
 
 moveBall = () => {
-	console.log("Ball angle = "+(Ball.angle * 57.29));
 	if (Ball.x + Ball.size >= canvas.width || Ball.x - Ball.size <= 0) {
 		Ball.angle = Math.PI - Ball.angle
 	}
 	if (Ball.x - Ball.size <= 0) {
-		Ball.x = canvas.width / 2;
-		Ball.y = canvas.height / 2;
-		Ball.angle = -Math.PI
+		Ball.resetPos();
+		Ball.angle = 0
 	}
-	if (Ball.x - Ball.size <= P1.x &&
-		(Ball.y >= P1.y && Ball.y <= P1.y + P1.h)) {
-		calculateBounceAngle(P1, Ball)
-	
+	else if (Ball.x + Ball.size >= canvas.width){
+		Ball.resetPos();
+		Ball.angle = Math.PI;
 	}
-	if (Ball.y + Ball.size >= canvas.height || Ball.y <= 0)
+	else if (Ball.y + Ball.size >= canvas.height || Ball.y - Ball.size <= 0)
 		Ball.angle = 2 * Math.PI - Ball.angle
+	else {
+		checkCollistion(P1, Ball)
+		checkCollistion(P2, Ball)
+	}
 	Ball.calcDir()
 	Ball.x += Ball.dx;
 	Ball.y += Ball.dy;
