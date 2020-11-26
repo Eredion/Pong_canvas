@@ -1,17 +1,22 @@
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
 
-// Player 1
-const P1 = {
-	x: canvas.width * 0.05,
-	y: canvas.height / 2,
-	w: 6,
-	h: 100,
-	speed: 5,
-	move_up: 0,
-	move_down: 0,
-	color: 'blue'
+// Player 
+class Player {
+	constructor(x, color) {
+		this.x = x
+		this.color = color
+	}
+	y = canvas.height / 2
+	w = 6
+	h = 100
+	speed = 5
+	move_up = 0
+	move_down = 0
 }
+
+const P1 = new Player(canvas.width * 0.05, 'blue');
+const P2 = new Player(canvas.width * 0.95, 'red');
 
 drawPlayer = (player) => {
 	ctx.fillStyle = player.color
@@ -27,16 +32,24 @@ movePlayer = (player) => {
 
 keyDown = (key) => {
 	if (key.key == 'ArrowUp')
-		P1.move_up = 1
+		P2.move_up = 1
 	if (key.key == 'ArrowDown')
+		P2.move_down = 1
+	if (key.key == 'w')
+		P1.move_up = 1
+	if (key.key == 's')
 		P1.move_down = 1
 }
 
 
 keyUp = (key) => {
 	if (key.key == 'ArrowUp')
-		P1.move_up = 0
+		P2.move_up = 0
 	if (key.key == 'ArrowDown')
+		P2.move_down = 0
+	if (key.key == 'w')
+		P1.move_up = 0
+	if (key.key == 's')
 		P1.move_down = 0
 }
 
@@ -44,11 +57,13 @@ const Ball = {
 	x: 300,
 	y: 300,
 	size: 10,
-	angle: 0,
+	angle: - 2 * Math.PI,
 	speed: 5,
 	dx: 5,
 	dy: 0,
 	calcDir() {
+		if (this.angle > (2 * Math.PI))
+			this.angle = this.angle % (2 * Math.PI);
 		this.dx = Math.cos(this.angle) * this.speed;
 		this.dy = Math.sin(this.angle) * this.speed;
 	},
@@ -61,40 +76,38 @@ drawBall = () => {
 	ctx.fill();
 }
 
+
 calculateBounceAngle = (player, ball) => {
-	const playerMiddle = player.y + player.h / 2;
-	const offset = - (playerMiddle - ball.y);
-	// Multiplico Pi por 0,9 para evitar que rebote verticalmente de manera eterna
-	const angleInc = (offset / (player.h / 2)) * (Math.PI * Math.PI / 3);
-	ball.angle = ball.angle + angleInc;
-	ball.calcDir();
-//	ball.dx = Math.cos(newAngle) * ball.speed;
-//	ball.dy = Math.sin(newAngle) * ball.speed;
+	const playerMiddle = player.y + (player.h / 2);
+	const offset = (playerMiddle - ball.y) / (player.h / 2);
+	ball.angle = offset * (Math.PI * 0.833);
 }
 
 moveBall = () => {
-//	console.log("Ball x = "+Ball.y+" P1 x = "+P1.y);
-	if (Ball.x + Ball.size >= canvas.width) {
-		Ball.dx *= -1;
+	console.log("Ball angle = "+(Ball.angle * 57.29));
+	if (Ball.x + Ball.size >= canvas.width || Ball.x - Ball.size <= 0) {
+		Ball.angle = Math.PI - Ball.angle
 	}
 	if (Ball.x - Ball.size <= 0) {
 		Ball.x = canvas.width / 2;
 		Ball.y = canvas.height / 2;
 		Ball.angle = -Math.PI
-		Ball.calcDir()
 	}
-	if (Ball.x - Ball.size <= P1.x + P1.w &&
-		(Ball.y + Ball.size >= P1.y && Ball.y - Ball.size <= P1.y + P1.h)) {
+	if (Ball.x - Ball.size <= P1.x &&
+		(Ball.y >= P1.y && Ball.y <= P1.y + P1.h)) {
 		calculateBounceAngle(P1, Ball)
 	
 	}
-
-	if (Ball.y + Ball.size <= P1.y && Ball.y + Ball.size >= (P1.y + P1.y))
-		console.log("collision")
-	if (Ball.y + Ball.size >= canvas.height || Ball.y - Ball.size <= 0)
-		Ball.dy *= -1
+	if (Ball.y + Ball.size >= canvas.height || Ball.y <= 0)
+		Ball.angle = 2 * Math.PI - Ball.angle
+	Ball.calcDir()
 	Ball.x += Ball.dx;
 	Ball.y += Ball.dy;
+}
+
+const listen = () => {
+	document.addEventListener('keydown', keyDown)
+	document.addEventListener('keyup', keyUp)
 }
 
 drawLoop = () =>
@@ -102,10 +115,12 @@ drawLoop = () =>
 	ctx.clearRect(0, 0, canvas.width, canvas.height);
 	drawBall();
 	moveBall();
+	listen();
 	drawPlayer(P1);
-	document.addEventListener('keydown', keyDown)
-	document.addEventListener('keyup', keyUp)
+	drawPlayer(P2);
+	listen();
 	movePlayer(P1);
+	movePlayer(P2);
 	requestAnimationFrame(drawLoop);
 }
 
